@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.mict.mictpicture.annotation.AuthCheck;
+import com.mict.mictpicture.api.imagesearch.ImageSearchApiFacade;
+import com.mict.mictpicture.api.imagesearch.model.ImageSearchResult;
 import com.mict.mictpicture.common.BaseResponse;
 import com.mict.mictpicture.common.DeleteRequest;
 import com.mict.mictpicture.common.ResultUtils;
@@ -320,5 +322,21 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         Integer count = pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUser);
         return ResultUtils.success(count);
+    }
+
+    /**
+     * 以图搜图
+     * @param searchPictureByPictureRequest
+     * @return
+     */
+    @PostMapping("/search_picture")
+    public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null,ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0,ErrorCode.PARAMS_ERROR);
+        Picture picture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(picture == null,ErrorCode.NOT_FOUND_ERROR);
+        List<ImageSearchResult> resultList = ImageSearchApiFacade.searchImage(picture.getUrl());
+        return ResultUtils.success(resultList);
     }
 }
