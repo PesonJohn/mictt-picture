@@ -1,17 +1,20 @@
 package com.mict.mictpicture.manager;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONUtil;
 import com.mict.mictpicture.config.CosClientConfig;
+import com.mict.mictpicture.exception.BusinessException;
+import com.mict.mictpicture.exception.ErrorCode;
 import com.qcloud.cos.COSClient;
-import com.qcloud.cos.model.COSObject;
-import com.qcloud.cos.model.GetObjectRequest;
-import com.qcloud.cos.model.PutObjectRequest;
-import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.*;
 import com.qcloud.cos.model.ciModel.persistence.PicOperations;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +22,7 @@ import java.util.List;
  * COS 通用使用
  */
 @Component
+@Slf4j
 public class CosManager {
 
     @Resource
@@ -97,5 +101,36 @@ public class CosManager {
         return cosClient.putObject(putObjectRequest);
     }
 
+    /**
+     * 获取图片主色调
+     * @param key 图片的唯一键
+     * @return 图片的主色调信息
+     */
+    public String getImageAve(String key) {
+        // 创建获取对象的请求
+        GetObjectRequest getObjectRequest = new GetObjectRequest(cosClientConfig.getBucket(), key);
+        // 设置图片处理规则为获取主色调
+        String rule = "imageAve";
+        getObjectRequest.putCustomQueryParameter(rule, null);
+        // 获取对象
+        COSObject cosObject = cosClient.getObject(getObjectRequest);
+        // 读取内容流并解析主色调信息
+        try (COSObjectInputStream objectContent = cosObject.getObjectContent();
+             ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+            // 读取流内容
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = objectContent.read(buffer)) != -1) {
+                result.write(buffer, 0, length);
+            }
+
+            // 将字节数组转换为字符串
+            String aveColor = result.toString("UTF-8");
+            return JSONUtil.parseObj(aveColor).getStr("RGB");
+        } catch (IOException e) {
+            log.error("获取图片主色调失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取图片主色调失败");
+        }
+    }
 
 }

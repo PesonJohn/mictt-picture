@@ -329,7 +329,7 @@ public class PictureController {
      * @param searchPictureByPictureRequest
      * @return
      */
-    @PostMapping("/search_picture")
+    @PostMapping("/search/picture")
     public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest) {
         ThrowUtils.throwIf(searchPictureByPictureRequest == null,ErrorCode.PARAMS_ERROR);
         Long pictureId = searchPictureByPictureRequest.getPictureId();
@@ -338,5 +338,16 @@ public class PictureController {
         ThrowUtils.throwIf(picture == null,ErrorCode.NOT_FOUND_ERROR);
         List<ImageSearchResult> resultList = ImageSearchApiFacade.searchImage(picture.getUrl());
         return ResultUtils.success(resultList);
+    }
+
+    @PostMapping("/search/color")
+    public BaseResponse<List<PictureVo>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest,
+                                                              HttpServletRequest request) {
+        ThrowUtils.throwIf(searchPictureByColorRequest == null,ErrorCode.PARAMS_ERROR);
+        String picColor = searchPictureByColorRequest.getPicColor();
+        Long spaceId = searchPictureByColorRequest.getSpaceId();
+        User loginUser = userService.getLoginUser(request);
+        List<PictureVo> pictureVoList = pictureService.searchPictureByColor(spaceId, picColor, loginUser);
+        return ResultUtils.success(pictureVoList);
     }
 }
