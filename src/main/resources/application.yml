@@ -2,6 +2,9 @@ server:
   port: 8123
   servlet:
     context-path: /api
+    session:
+      cookie:
+        max-age: 2592000
 
 spring:
   application:
@@ -16,6 +19,10 @@ spring:
     host: 127.0.0.1
     port: 6379
     connect-timeout: 5000
+  session:
+    store-type: redis
+    #    30天后过期
+    timeout: 2592000
   servlet:
     multipart:
       max-file-size: 10MB #默认最大上传1MB，改大以便上传更大的文件
@@ -43,4 +50,15 @@ knife4j:
         api-rule-resources:
           - com.mict.mictpicture.controller
 
+# 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: ""
+    secretId: ""
+    secretKey: ""
+    region: ""
+    bucket: ""
 
+# 阿里云AI 配置
+aliYunAi:
+  apiKey: ""

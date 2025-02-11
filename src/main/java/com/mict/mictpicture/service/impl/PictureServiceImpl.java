@@ -8,6 +8,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.mict.mictpicture.api.aliyunAi.AliYunAIApi;
+import com.mict.mictpicture.api.aliyunAi.model.CreateOutPaintingTaskRequest;
+import com.mict.mictpicture.api.aliyunAi.model.CreateOutPaintingTaskResponse;
 import com.mict.mictpicture.exception.BusinessException;
 import com.mict.mictpicture.exception.ErrorCode;
 import com.mict.mictpicture.exception.ThrowUtils;
@@ -77,6 +80,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private AliYunAIApi aliYunAIApi;
 
     @Override
     public PictureVo uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
@@ -581,6 +587,22 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //5 更新数据库 批量更新
         boolean res = updateBatchById(pictureList);
         ThrowUtils.throwIf(!res,ErrorCode.OPERATION_ERROR,"批量编辑失败");
+    }
+
+    @Override
+    public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
+        //获取图片信息
+        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
+        Picture picture = Optional.ofNullable(getById(pictureId)).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在"));
+        //权限校验
+        checkPictureAuth(loginUser,picture);
+        //创建扩图任务
+        CreateOutPaintingTaskRequest createOutPaintingTaskRequest = new CreateOutPaintingTaskRequest();
+        CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
+        input.setImageUrl(picture.getUrl());
+        createOutPaintingTaskRequest.setInput(input);
+        createOutPaintingTaskRequest.setParameters(createPictureOutPaintingTaskRequest.getParameters());
+        return aliYunAIApi.createOutPaintingTask(createOutPaintingTaskRequest);
     }
 
     /**
