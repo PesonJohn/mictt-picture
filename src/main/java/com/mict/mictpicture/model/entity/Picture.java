@@ -88,6 +88,7 @@ public class Picture implements Serializable {
     /**
      * 空间 id
      */
+    //@TableField(updateStrategy = FieldStrategy.NEVER)//采用了分库分表，不能更新图片的spaceId值
     private Long spaceId;
 
 

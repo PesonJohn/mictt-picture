@@ -9,6 +9,7 @@ import com.mict.mictpicture.constant.UserConstant;
 import com.mict.mictpicture.exception.BusinessException;
 import com.mict.mictpicture.exception.ErrorCode;
 import com.mict.mictpicture.exception.ThrowUtils;
+import com.mict.mictpicture.manager.auth.SpaceUserAuthManager;
 import com.mict.mictpicture.model.dto.space.*;
 import com.mict.mictpicture.model.entity.Space;
 import com.mict.mictpicture.model.entity.User;
@@ -37,6 +38,9 @@ public class SpaceController {
 
     @Resource
     private SpaceService spaceService;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
 
     @PostMapping("/add")
@@ -119,8 +123,12 @@ public class SpaceController {
         // 查询数据库
         Space space = spaceService.getById(id);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        SpaceVo spaceVo = spaceService.getSpaceVo(space, request);
+        spaceVo.setPermissionList(permissionList);
         // 获取封装类
-        return ResultUtils.success(spaceService.getSpaceVo(space, request));
+        return ResultUtils.success(spaceVo);
     }
 
     /**

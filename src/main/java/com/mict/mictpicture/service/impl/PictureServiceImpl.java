@@ -6,6 +6,7 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mict.mictpicture.api.aliyunAi.AliYunAIApi;
@@ -93,10 +94,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (spaceId != null){
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null,ErrorCode.NOT_FOUND_ERROR,"空间不存在");
+            //已改为sa-token鉴权
             //校验是否有空间权限，仅空间管理员可以上传
-            if (!loginUser.getId().equals(space.getUserId())){
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"没有空间权限");
-            }
+//            if (!loginUser.getId().equals(space.getUserId())){
+//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"没有空间权限");
+//            }
             //校验额度
             if (space.getTotalCount() >= space.getMaxCount()){
                 throw new BusinessException(ErrorCode.OPERATION_ERROR,"空间条数不足");
@@ -114,10 +116,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (pictureId != null){
             Picture oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null,ErrorCode.NOT_FOUND_ERROR,"图片不存在");
+            //已改为sa-token鉴权
             //只有本人或管理员可以编辑
-            if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)){
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-            }
+//            if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)){
+//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+//            }
             //校验空间是否一致
             //没传spaceId 复用原有图片的spaceId (兼容了公共图库)
             if (spaceId == null){
@@ -137,6 +140,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (spaceId == null){
             //公共图库
             uploadPathPrefix = String.format("public/%s",loginUser.getId());
+            //分库分表需要插入图片时指定spaceId，所以约定公共空间的spaceId为0
+            //spaceId = 0L;
         }else {
             //空间
             uploadPathPrefix = String.format("space/%s",spaceId);
@@ -179,6 +184,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             boolean res = this.saveOrUpdate(picture);
             ThrowUtils.throwIf(!res,ErrorCode.OPERATION_ERROR,"图片上传失败，数据库异常");
             //公共空间不需要更新额度
+            //分库分表后公共空间的spaceId为0，从原来的null判断改为0L判断 关闭分库分表则改为null判断
             if (finalSpaceId != null){
                 //更新空间的使用额度
                 boolean update = spaceService.lambdaUpdate()
@@ -235,6 +241,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotEmpty(userId), "userId", userId);
         queryWrapper.eq(ObjUtil.isNotEmpty(spaceId), "spaceId", spaceId);
         queryWrapper.isNull(nullSpaceId, "spaceId");
+        //采用分库分表后需要指定spaceId
+//        queryWrapper.eq(nullSpaceId, "spaceId",0L);
         queryWrapper.like(StrUtil.isNotBlank(name), "name", name);
         queryWrapper.like(StrUtil.isNotBlank(introduction), "introduction", introduction);
         queryWrapper.like(StrUtil.isNotBlank(picFormat), "picFormat", picFormat);
@@ -463,11 +471,17 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture oldPicture = this.getById(pictureId);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         // 校验权限
-        checkPictureAuth(loginUser, oldPicture);
+        //已改为Sa-token注解鉴权
+        //checkPictureAuth(loginUser, oldPicture);
         //开启事务
         transactionTemplate.execute(status -> {
             // 操作数据库
             boolean result = this.removeById(pictureId);
+            //采用了分库分表，需要指定spaceId
+//            QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
+//            queryWrapper.eq("id",pictureId)
+//                            .eq("spaceId",oldPicture.getSpaceId());
+//            boolean result = this.remove(queryWrapper);
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
             //更新空间的使用额度
             boolean update = spaceService.lambdaUpdate()
@@ -498,11 +512,18 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture oldPicture = this.getById(id);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         // 校验权限
-        checkPictureAuth(loginUser, oldPicture);
+        //已改为Sa-token注解鉴权
+        //checkPictureAuth(loginUser, oldPicture);
         // 补充审核参数
         this.fillReviewPrams(picture, loginUser);
         // 操作数据库
         boolean result = this.updateById(picture);
+        //采用了分库分表，需要指定spaceId
+//        picture.setSpaceId(oldPicture.getSpaceId());
+//        UpdateWrapper<Picture> updateWrapper = new UpdateWrapper<>();
+//        updateWrapper.eq("id",id)
+//                       .eq("spaceId",picture.getSpaceId());
+//        boolean result = this.update(picture, updateWrapper);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
     }
 
@@ -595,7 +616,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         Picture picture = Optional.ofNullable(getById(pictureId)).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在"));
         //权限校验
-        checkPictureAuth(loginUser,picture);
+        //已改为Sa-token注解鉴权
+        //checkPictureAuth(loginUser,picture);
         //创建扩图任务
         CreateOutPaintingTaskRequest createOutPaintingTaskRequest = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();

@@ -11,6 +11,7 @@ import com.mict.mictpicture.constant.UserConstant;
 import com.mict.mictpicture.exception.BusinessException;
 import com.mict.mictpicture.exception.ErrorCode;
 import com.mict.mictpicture.exception.ThrowUtils;
+import com.mict.mictpicture.manager.auth.StpKit;
 import com.mict.mictpicture.model.dto.user.UserQueryRequest;
 import com.mict.mictpicture.model.entity.User;
 import com.mict.mictpicture.model.enums.UserRoleEnum;
@@ -99,6 +100,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         //保存用户登录状态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE,user);
+        //记录用户登录态到sa-token，便于空间鉴权使用 注意保证该用户信息与SpringSession中的信息过期时间一致
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE,user);
         return getLoginUserVo(user);
     }
 
