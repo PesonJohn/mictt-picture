@@ -39,7 +39,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword,String userName) {
         //校验参数
         if (StrUtil.hasBlank(userAccount,userPassword,checkPassword)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"参数为空");
@@ -66,7 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setUserName("匿名");
+        user.setUserName(StrUtil.isBlank(userName) ? "匿名" : userName);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean res = this.save(user);
         if (!res){

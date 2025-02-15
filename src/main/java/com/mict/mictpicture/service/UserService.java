@@ -22,9 +22,10 @@ public interface UserService extends IService<User> {
      * @param userAccount 账号
      * @param userPassword 密码
      * @param checkPassword 确认密码
+     * @param userName 用户名
      * @return 新用户id
      */
-    long userRegister(String userAccount,String userPassword,String checkPassword);
+    long userRegister(String userAccount,String userPassword,String checkPassword,String userName);
 
     /**
      * 用户登录

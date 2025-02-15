@@ -40,7 +40,8 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long res = userService.userRegister(userAccount, userPassword, checkPassword);
+        String userName = userRegisterRequest.getUserName();
+        long res = userService.userRegister(userAccount, userPassword, checkPassword,userName);
         return ResultUtils.success(res);
     }
 
