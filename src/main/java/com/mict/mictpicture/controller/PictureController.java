@@ -418,8 +418,6 @@ public class PictureController {
     public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId){
         ThrowUtils.throwIf(taskId == null,ErrorCode.PARAMS_ERROR);
         GetOutPaintingTaskResponse response = aliYunAIApi.getOutPaintingTask(taskId);
-        System.out.println(response.getOutput().getTaskStatus());
-        System.out.println(response.getOutput().getOutputImageUrl());
         return ResultUtils.success(response);
     }
 }
