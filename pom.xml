@@ -184,7 +184,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.mict.mictpicture.MictPictureApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>
